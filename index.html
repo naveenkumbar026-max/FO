@@ -1,0 +1,206 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#101827">
+<title>F&O Trading Tracker</title>
+<style>
+:root{--bg:#0b1220;--panel:#121d2e;--panel2:#172438;--text:#eef4ff;--muted:#9aabc2;--line:#26364d;--green:#2ecc8a;--red:#ff6b78;--blue:#78a9ff;--amber:#ffc76b}
+*{box-sizing:border-box}body{margin:0;background:linear-gradient(160deg,#0b1220,#101b2d);color:var(--text);font:15px/1.45 system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif}
+.wrap{max-width:1100px;margin:auto;padding:18px 14px 40px}.top{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:18px}
+h1{font-size:clamp(24px,5vw,34px);margin:0;letter-spacing:-.7px}.sub{color:var(--muted);font-size:13px;margin-top:4px}
+.pill{border:1px solid var(--line);border-radius:999px;padding:7px 11px;color:var(--muted);font-size:12px}
+.cards{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin:14px 0}
+.card,.panel{background:rgba(18,29,46,.96);border:1px solid var(--line);border-radius:16px;padding:15px;box-shadow:0 8px 25px #0002}
+.kicker{color:var(--muted);font-size:12px}.metric{font-size:clamp(21px,4vw,28px);font-weight:750;margin-top:5px;letter-spacing:-.5px}.positive{color:var(--green)}.negative{color:var(--red)}
+.tabs{display:flex;gap:7px;overflow:auto;margin:18px 0 12px;padding-bottom:3px}
+.tab{background:transparent;border:1px solid var(--line);color:var(--muted);padding:10px 14px;border-radius:10px;white-space:nowrap;font-weight:650}
+.tab.active{background:#233653;color:var(--text);border-color:#46658f}
+.layout{display:grid;grid-template-columns:1.05fr .95fr;gap:12px}.panel h2{font-size:17px;margin:0 0 13px}
+label{display:block;color:var(--muted);font-size:12px;margin:0 0 5px}
+input,select,textarea{width:100%;background:#0c1626;border:1px solid var(--line);color:var(--text);border-radius:10px;padding:11px 12px;font:inherit;min-width:0}
+input:focus,select:focus{outline:2px solid #4b79b8;border-color:transparent}
+.formgrid{display:grid;grid-template-columns:1fr 1fr;gap:11px}.field.full{grid-column:1/-1}
+.actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:13px}
+button{cursor:pointer}.btn{border:0;border-radius:10px;padding:11px 15px;font-weight:700;background:var(--blue);color:#091322}
+.btn.secondary{background:#263a56;color:var(--text);border:1px solid #3a506e}.btn.danger{background:#4b2632;color:#ffdce0;border:1px solid #81404e}
+.small{font-size:12px;color:var(--muted)}.hint{background:#17263b;border-radius:10px;padding:10px 12px;color:var(--muted);font-size:12px;margin-top:12px}
+.tablewrap{overflow:auto}table{width:100%;border-collapse:collapse;min-width:650px}th,td{text-align:left;padding:11px 9px;border-bottom:1px solid var(--line);font-size:13px}th{color:var(--muted);font-weight:600}td:last-child,th:last-child{text-align:right}
+.empty{text-align:center;color:var(--muted);padding:25px 8px}
+.toolbar{display:flex;gap:9px;align-items:end;flex-wrap:wrap;margin-bottom:12px}.toolbar>div{min-width:140px;flex:1}
+.chartbox{height:220px;position:relative}.chartbox canvas{width:100%;height:100%}
+.reportgrid{display:grid;grid-template-columns:repeat(3,1fr);gap:9px;margin-bottom:13px}
+.reportbox{background:#0d1828;border:1px solid var(--line);border-radius:12px;padding:12px}
+.reportbox .metric{font-size:20px}
+.hidden{display:none!important}
+footer{color:var(--muted);font-size:12px;text-align:center;margin-top:22px}
+@media(max-width:760px){.cards{grid-template-columns:repeat(2,1fr)}.layout{grid-template-columns:1fr}.reportgrid{grid-template-columns:1fr 1fr}}
+@media(max-width:420px){.wrap{padding:14px 10px 30px}.card,.panel{padding:13px}.formgrid{grid-template-columns:1fr}.field.full{grid-column:auto}.reportgrid{grid-template-columns:1fr 1fr}}
+</style>
+</head>
+<body>
+<div class="wrap">
+<header class="top">
+ <div><h1>F&O Trading Tracker</h1><div class="sub">Your personal daily trading journal · Stored on this device</div></div>
+ <div class="pill">Tracking from 03 Nov 2026</div>
+</header>
+<section class="cards">
+ <div class="card"><div class="kicker">Net P&amp;L</div><div class="metric" id="netTotal">₹0.00</div><div class="small">After charges</div></div>
+ <div class="card"><div class="kicker">Gross profit</div><div class="metric positive" id="grossProfit">₹0.00</div></div>
+ <div class="card"><div class="kicker">Gross loss</div><div class="metric negative" id="grossLoss">₹0.00</div></div>
+ <div class="card"><div class="kicker">Trading days</div><div class="metric" id="tradingDays">0</div><div class="small" id="tradeCount">0 trades recorded</div></div>
+</section>
+<nav class="tabs">
+ <button class="tab active" data-tab="entry">Add trade</button><button class="tab" data-tab="history">Trade history</button><button class="tab" data-tab="reports">Monthly report</button><button class="tab" data-tab="capital">Capital</button>
+</nav>
+
+<section id="entry" class="tabpage">
+ <div class="layout">
+  <div class="panel">
+   <h2>Record a trade</h2>
+   <form id="tradeForm">
+    <div class="formgrid">
+     <div class="field"><label for="date">Trade date</label><input id="date" type="date" min="2026-11-03" required></div>
+     <div class="field"><label for="instrument">Instrument</label><input id="instrument" placeholder="e.g. NIFTY 26 Nov 25000 CE" required maxlength="80"></div>
+     <div class="field"><label for="segment">Segment</label><select id="segment"><option>Index Options</option><option>Stock Options</option><option>Futures</option><option>Other</option></select></div>
+     <div class="field"><label for="direction">Position</label><select id="direction"><option>Buy</option><option>Sell</option></select></div>
+     <div class="field"><label for="qty">Quantity</label><input id="qty" type="number" min="1" step="1" placeholder="e.g. 75"></div>
+     <div class="field"><label for="gross">Gross P&amp;L (₹)</label><input id="gross" type="number" step="0.01" placeholder="Use minus for loss" required></div>
+     <div class="field"><label for="charges">Brokerage &amp; charges (₹)</label><input id="charges" type="number" min="0" step="0.01" value="0"></div>
+     <div class="field"><label for="capitalUsed">Capital used (₹)</label><input id="capitalUsed" type="number" min="0" step="0.01" placeholder="Optional"></div>
+     <div class="field full"><label for="notes">Notes (optional)</label><input id="notes" maxlength="160" placeholder="Entry reason, strategy, lesson learned…"></div>
+    </div>
+    <div class="hint">Net P&amp;L is calculated as Gross P&amp;L minus brokerage and charges. Enter a negative gross P&amp;L for a losing trade.</div>
+    <div class="actions"><button class="btn" type="submit" id="saveBtn">Save trade</button><button class="btn secondary" type="reset">Clear form</button></div>
+   </form>
+  </div>
+  <div class="panel">
+   <h2>Performance overview</h2>
+   <div class="chartbox"><canvas id="overviewChart" aria-label="Daily net profit and loss chart"></canvas></div>
+   <div class="hint">This chart shows the latest 14 trading dates with recorded trades. Your entries stay in this browser unless you export a backup.</div>
+  </div>
+ </div>
+</section>
+
+<section id="history" class="tabpage hidden">
+ <div class="panel">
+  <h2>Trade history</h2>
+  <div class="toolbar">
+   <div><label for="historyMonth">Filter by month</label><input id="historyMonth" type="month"></div>
+   <div><label for="historySearch">Search instrument</label><input id="historySearch" placeholder="Search…"></div>
+   <div><label>&nbsp;</label><button class="btn secondary" id="clearFilters">Clear filters</button></div>
+  </div>
+  <div class="tablewrap"><table><thead><tr><th>Date</th><th>Instrument</th><th>Segment</th><th>Qty</th><th>Gross P&amp;L</th><th>Charges</th><th>Net P&amp;L</th><th></th></tr></thead><tbody id="historyBody"></tbody></table></div>
+  <div class="small" id="historySummary"></div>
+ </div>
+</section>
+
+<section id="reports" class="tabpage hidden">
+ <div class="panel">
+  <h2>Monthly profit &amp; loss report</h2>
+  <div class="toolbar"><div><label for="reportMonth">Select month</label><input id="reportMonth" type="month"></div></div>
+  <div class="reportgrid">
+   <div class="reportbox"><div class="kicker">Net P&amp;L</div><div class="metric" id="monthNet">₹0.00</div></div>
+   <div class="reportbox"><div class="kicker">Winning trades</div><div class="metric positive" id="monthWins">0</div></div>
+   <div class="reportbox"><div class="kicker">Losing trades</div><div class="metric negative" id="monthLosses">0</div></div>
+   <div class="reportbox"><div class="kicker">Gross profit</div><div class="metric positive" id="monthGrossProfit">₹0.00</div></div>
+   <div class="reportbox"><div class="kicker">Gross loss</div><div class="metric negative" id="monthGrossLoss">₹0.00</div></div>
+   <div class="reportbox"><div class="kicker">Total charges</div><div class="metric" id="monthCharges">₹0.00</div></div>
+  </div>
+  <div class="chartbox"><canvas id="monthChart" aria-label="Monthly daily net profit and loss chart"></canvas></div>
+ </div>
+</section>
+
+<section id="capital" class="tabpage hidden">
+ <div class="layout">
+  <div class="panel">
+   <h2>Capital &amp; investment</h2>
+   <label for="startingCapital">Starting trading capital (₹)</label><input id="startingCapital" type="number" min="0" step="0.01" placeholder="Enter your starting capital">
+   <div class="actions"><button class="btn" id="saveCapital">Save capital</button></div>
+   <div class="hint">Your current tracked capital = starting capital + cumulative net P&amp;L. This is a journal estimate, not a live broker balance. Capital used is recorded per trade for reference.</div>
+  </div>
+  <div class="panel">
+   <h2>Capital summary</h2>
+   <div class="reportbox"><div class="kicker">Starting capital</div><div class="metric" id="capitalStart">₹0.00</div></div>
+   <div class="reportbox" style="margin-top:9px"><div class="kicker">Cumulative net P&amp;L</div><div class="metric" id="capitalPnl">₹0.00</div></div>
+   <div class="reportbox" style="margin-top:9px"><div class="kicker">Estimated current capital</div><div class="metric" id="capitalCurrent">₹0.00</div></div>
+   <div class="reportbox" style="margin-top:9px"><div class="kicker">Total capital used (recorded)</div><div class="metric" id="capitalUsedTotal">₹0.00</div></div>
+  </div>
+ </div>
+</section>
+<div class="panel" style="margin-top:12px">
+ <h2>Backup &amp; restore</h2>
+ <div class="actions"><button class="btn secondary" id="exportBtn">Export backup (JSON)</button><label class="btn secondary" for="importFile" style="display:inline-flex;align-items:center;margin:0;cursor:pointer">Import backup<input id="importFile" type="file" accept=".json,application/json" style="display:none"></label><button class="btn danger" id="deleteAll">Delete all trades</button></div>
+ <div class="small" style="margin-top:9px">Important: browser storage can be cleared when you clear site data, change browser, or change device. Export a backup regularly. Importing a backup replaces the current trade list and capital setting.</div>
+</div>
+<footer>F&amp;O Trading Tracker · Personal record keeping only · Not investment advice</footer>
+</div>
+<script>
+const KEY='foTracker_v1';
+const START='2026-11-03';
+let state={trades:[],capital:0};
+const $=id=>document.getElementById(id);
+const money=n=>'₹'+Number(n||0).toLocaleString('en-IN',{minimumFractionDigits:2,maximumFractionDigits:2});
+const net=t=>Number(t.gross)-Number(t.charges||0);
+function load(){try{const s=JSON.parse(localStorage.getItem(KEY)||'{}');state.trades=Array.isArray(s.trades)?s.trades:[];state.capital=Number(s.capital)||0;}catch(e){state={trades:[],capital:0};}}
+function persist(){localStorage.setItem(KEY,JSON.stringify(state));render();}
+function esc(s){return String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
+function sum(arr,fn){return arr.reduce((a,x)=>a+fn(x),0);}
+function signedClass(n){return n>=0?'positive':'negative';}
+function setMetric(id,n){$(id).textContent=money(n);$(id).className='metric '+signedClass(n);}
+function monthlyTrades(month){return state.trades.filter(t=>t.date.startsWith(month));}
+function render(){
+ const ts=state.trades, netTotal=sum(ts,net), gp=sum(ts,t=>Math.max(0,Number(t.gross))), gl=sum(ts,t=>Math.min(0,Number(t.gross)));
+ setMetric('netTotal',netTotal);$('grossProfit').textContent=money(gp);$('grossLoss').textContent=money(gl);
+ $('tradingDays').textContent=new Set(ts.map(t=>t.date)).size;$('tradeCount').textContent=ts.length+' trades recorded';
+ renderHistory();renderReport();renderCapital();drawChart($('overviewChart'),dailySeries(ts).slice(-14));drawChart($('monthChart'),dailySeries(monthlyTrades($('reportMonth').value||new Date().toISOString().slice(0,7))));
+}
+function dailySeries(ts){const m={};ts.forEach(t=>m[t.date]=(m[t.date]||0)+net(t));return Object.keys(m).sort().map(k=>({label:k.slice(5),value:m[k]}));}
+function renderHistory(){
+ const month=$('historyMonth').value, q=$('historySearch').value.toLowerCase();
+ const arr=state.trades.filter(t=>(!month||t.date.startsWith(month))&&(!q||t.instrument.toLowerCase().includes(q))).sort((a,b)=>b.date.localeCompare(a.date)||b.id-a.id);
+ $('historyBody').innerHTML=arr.length?arr.map(t=>{const n=net(t);return `<tr><td>${esc(t.date)}</td><td>${esc(t.instrument)}<div class="small">${esc(t.notes||'')}</div></td><td>${esc(t.segment)}</td><td>${esc(t.qty||'—')}</td><td>${money(t.gross)}</td><td>${money(t.charges)}</td><td class="${signedClass(n)}">${money(n)}</td><td><button class="btn danger" style="padding:6px 9px" onclick="deleteTrade('${t.id}')">Delete</button></td></tr>`}).join(''):'<tr><td colspan="8" class="empty">No trades found. Add your first trade to get started.</td></tr>';
+ $('historySummary').textContent=arr.length?`${arr.length} trade(s) · Net P&L: ${money(sum(arr,net))}`:'';
+}
+function renderReport(){
+ const month=$('reportMonth').value||new Date().toISOString().slice(0,7),ts=monthlyTrades(month),n=sum(ts,net);
+ setMetric('monthNet',n);$('monthWins').textContent=ts.filter(t=>net(t)>0).length;$('monthLosses').textContent=ts.filter(t=>net(t)<0).length;
+ $('monthGrossProfit').textContent=money(sum(ts,t=>Math.max(0,Number(t.gross))));$('monthGrossLoss').textContent=money(sum(ts,t=>Math.min(0,Number(t.gross))));$('monthCharges').textContent=money(sum(ts,t=>Number(t.charges)||0));
+}
+function renderCapital(){
+ $('startingCapital').value=state.capital||'';$('capitalStart').textContent=money(state.capital);
+ const pnl=sum(state.trades,net);setMetric('capitalPnl',pnl);$('capitalCurrent').textContent=money(state.capital+pnl);$('capitalUsedTotal').textContent=money(sum(state.trades,t=>Number(t.capitalUsed)||0));
+}
+function drawChart(canvas,data){
+ const ctx=canvas.getContext('2d'),dpr=window.devicePixelRatio||1,w=canvas.clientWidth||300,h=canvas.clientHeight||220;
+ canvas.width=w*dpr;canvas.height=h*dpr;ctx.scale(dpr,dpr);ctx.clearRect(0,0,w,h);
+ const pad={l:48,r:12,t:16,b:32},cw=w-pad.l-pad.r,ch=h-pad.t-pad.b;
+ ctx.font='11px system-ui';ctx.strokeStyle='#2b3b51';ctx.fillStyle='#9aabc2';ctx.lineWidth=1;
+ if(!data.length){ctx.fillText('No trade data yet',pad.l+8,h/2);return;}
+ const max=Math.max(1,...data.map(d=>Math.abs(d.value)));const range=max*1.2;
+ const y=v=>pad.t+(range-v)/(2*range)*ch,zero=y(0);
+ for(let i=0;i<=4;i++){let v=range-i*range/2;let yy=y(v);ctx.beginPath();ctx.moveTo(pad.l,yy);ctx.lineTo(w-pad.r,yy);ctx.stroke();ctx.fillText(Math.round(v).toString(),4,yy+4);}
+ ctx.strokeStyle='#73839a';ctx.beginPath();ctx.moveTo(pad.l,zero);ctx.lineTo(w-pad.r,zero);ctx.stroke();
+ const slot=cw/data.length,bw=Math.max(5,Math.min(28,slot*.55));
+ data.forEach((d,i)=>{let x=pad.l+i*slot+(slot-bw)/2,yy=y(d.value);ctx.fillStyle=d.value>=0?'#2ecc8a':'#ff6b78';ctx.fillRect(x,Math.min(yy,zero),bw,Math.max(2,Math.abs(zero-yy)));ctx.fillStyle='#9aabc2';ctx.save();ctx.translate(x+bw/2,h-8);ctx.rotate(-.25);ctx.textAlign='center';ctx.fillText(d.label,0,0);ctx.restore();});
+}
+function deleteTrade(id){if(confirm('Delete this trade?')){state.trades=state.trades.filter(t=>t.id!==id);persist();}}
+window.deleteTrade=deleteTrade;
+$('tradeForm').addEventListener('submit',e=>{
+ e.preventDefault();const date=$('date').value;if(date<START){alert('Trade date must be 3 November 2026 or later.');return;}
+ const gross=Number($('gross').value),charges=Number($('charges').value||0);
+ if(!Number.isFinite(gross)||!Number.isFinite(charges)||charges<0){alert('Please enter valid P&L and charges.');return;}
+ const t={id:String(Date.now())+Math.random().toString(16).slice(2),date,instrument:$('instrument').value.trim(),segment:$('segment').value,direction:$('direction').value,qty:$('qty').value,gross,charges,capitalUsed:Number($('capitalUsed').value||0),notes:$('notes').value.trim()};
+ state.trades.push(t);persist();e.target.reset();$('date').value=new Date().toISOString().slice(0,10)<START?START:new Date().toISOString().slice(0,10);$('charges').value='0';alert('Trade saved successfully.');
+});
+document.querySelectorAll('.tab').forEach(b=>b.addEventListener('click',()=>{document.querySelectorAll('.tab').forEach(x=>x.classList.toggle('active',x===b));document.querySelectorAll('.tabpage').forEach(x=>x.classList.toggle('hidden',x.id!==b.dataset.tab));if(b.dataset.tab==='reports')render();}));
+$('historyMonth').addEventListener('input',renderHistory);$('historySearch').addEventListener('input',renderHistory);$('clearFilters').onclick=()=>{$('historyMonth').value='';$('historySearch').value='';renderHistory();};
+$('reportMonth').addEventListener('input',render);$('saveCapital').onclick=()=>{state.capital=Math.max(0,Number($('startingCapital').value)||0);persist();alert('Starting capital saved.');};
+$('exportBtn').onclick=()=>{const blob=new Blob([JSON.stringify(state,null,2)],{type:'application/json'}),url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download='fo-tracker-backup-'+new Date().toISOString().slice(0,10)+'.json';a.click();URL.revokeObjectURL(url);};
+$('importFile').addEventListener('change',async e=>{const f=e.target.files[0];if(!f)return;try{const d=JSON.parse(await f.text());if(!Array.isArray(d.trades)||typeof d.capital!=='number')throw Error();if(confirm('Import will replace your current trades and capital. Continue?')){state={trades:d.trades,capital:d.capital};persist();alert('Backup imported.');}}catch(err){alert('That backup file is not valid.');}e.target.value='';});
+$('deleteAll').onclick=()=>{if(confirm('Permanently delete all saved trades? Export a backup first if needed.')){state.trades=[];persist();}};
+window.addEventListener('resize',()=>{drawChart($('overviewChart'),dailySeries(state.trades).slice(-14));drawChart($('monthChart'),dailySeries(monthlyTrades($('reportMonth').value||new Date().toISOString().slice(0,7))));});
+load();const today=new Date().toISOString().slice(0,10);$('date').value=today<START?START:today;$('date').min=START;$('reportMonth').value=today.slice(0,7);render();
+</script>
+</body></html>
